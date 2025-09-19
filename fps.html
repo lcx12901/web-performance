@@ -1,0 +1,345 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>绘制帧率 (FPS) - Web性能指标演示</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- 配置Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        warning: '#F59E0B',
+                        danger: '#EF4444',
+                        purple: '#8B5CF6',
+                        indigo: '#6366F1',
+                        dark: '#1E293B',
+                        light: '#F8FAFC'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-hover {
+                @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+            }
+            .animated-box {
+                position: absolute;
+                border-radius: 4px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800">
+    <!-- 顶部导航 -->
+    <header class="bg-white shadow-md fixed w-full top-0 z-50 transition-all duration-300">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <a href="index.html" class="flex items-center">
+                    <i class="fa fa-arrow-left text-gray-600 mr-2"></i>
+                    <i class="fa fa-tachometer text-primary text-2xl mr-3"></i>
+                    <h1 class="text-xl font-bold text-dark">Web性能指标演示</h1>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="container mx-auto px-4 pt-28 pb-16">
+        <!-- FPS 演示 -->
+        <section class="mb-16">
+            <div class="bg-white rounded-xl shadow-md overflow-hidden card-hover">
+                <div class="bg-indigo text-white p-6">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-2xl font-bold">绘制帧率 (FPS)</h2>
+                        <span class="bg-white/20 px-3 py-1 rounded-full text-sm">渲染性能</span>
+                    </div>
+                    <p class="mt-2 opacity-90">浏览器每秒渲染页面的次数（理想60FPS），低于30FPS会让动画、滚动显得"卡顿"。</p>
+                </div>
+                
+                <div class="p-6">
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div>
+                            <h3 class="text-lg font-semibold mb-4 text-gray-800">演示</h3>
+                            <div class="mb-4">
+                                <label for="box-count" class="block text-gray-700 mb-2">动画元素数量（影响FPS）：</label>
+                                <div class="flex items-center">
+                                    <input type="range" id="box-count" min="1" max="50" value="5" class="w-full">
+                                    <span id="box-count-value" class="ml-3 font-medium min-w-[3rem] text-center">5</span>
+                                </div>
+                            </div>
+                            
+                            <div id="fps-demo" class="border border-gray-200 rounded-lg p-4 h-64 bg-gray-50 relative overflow-hidden">
+                                <!-- 动画元素将通过JS动态创建 -->
+                            </div>
+                            
+                            <div class="mt-4 flex justify-center">
+                                <div class="bg-indigo/10 text-indigo px-4 py-2 rounded-lg">
+                                    <span class="font-medium">当前FPS：</span>
+                                    <span id="current-fps" class="font-mono font-bold">60</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h3 class="text-lg font-semibold mb-4 text-gray-800">性能数据</h3>
+                            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                <div class="flex justify-between items-center mb-3">
+                                    <span class="text-gray-600">FPS 状态:</span>
+                                    <span id="fps-status" class="font-semibold text-secondary">流畅（60FPS）</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                                    <div id="fps-bar" class="bg-indigo h-2.5 rounded-full" style="width: 100%"></div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2 text-center text-sm">
+                                    <div class="bg-green-100 text-green-800 p-2 rounded">
+                                        <span class="block font-semibold">流畅</span>
+                                        <span>&gt; 50FPS</span>
+                                    </div>
+                                    <div class="bg-yellow-100 text-yellow-800 p-2 rounded">
+                                        <span class="block font-semibold">一般</span>
+                                        <span>30 - 50FPS</span>
+                                    </div>
+                                    <div class="bg-red-100 text-red-800 p-2 rounded">
+                                        <span class="block font-semibold">卡顿</span>
+                                        <span>&lt; 30FPS</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-6">
+                                <h4 class="font-semibold mb-2">优化建议:</h4>
+                                <ul class="list-disc list-inside text-gray-600 space-y-1">
+                                    <li>减少动画元素数量</li>
+                                    <li>使用CSS transform和opacity做动画</li>
+                                    <li>避免动画期间的布局计算</li>
+                                    <li>使用will-change提示浏览器优化</li>
+                                    <li>使用硬件加速的CSS属性</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 相关指标 -->
+        <section>
+            <h3 class="text-xl font-bold mb-6">相关性能指标</h3>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <a href="fid.html" class="block p-4 bg-white rounded-lg shadow-sm border border-gray-100 hover:border-indigo transition-colors">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-purple/10 flex items-center justify-center mr-3">
+                            <i class="fa fa-mouse-pointer text-purple"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-medium">首次输入延迟 (FID)</h4>
+                            <p class="text-sm text-gray-500">用户首次交互到响应的时间</p>
+                        </div>
+                    </div>
+                </a>
+                
+                <a href="long-tasks.html" class="block p-4 bg-white rounded-lg shadow-sm border border-gray-100 hover:border-indigo transition-colors">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-danger/10 flex items-center justify-center mr-3">
+                            <i class="fa fa-cogs text-danger"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-medium">长任务执行时间</h4>
+                            <p class="text-sm text-gray-500">超过50ms的阻塞任务</p>
+                        </div>
+                    </div>
+                </a>
+                
+                <a href="cls.html" class="block p-4 bg-white rounded-lg shadow-sm border border-gray-100 hover:border-indigo transition-colors">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center mr-3">
+                            <i class="fa fa-exchange text-warning"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-medium">累积布局偏移 (CLS)</h4>
+                            <p class="text-sm text-gray-500">页面元素意外偏移的总和</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </section>
+    </main>
+    
+
+    <script>
+        // 导航栏滚动效果
+        window.addEventListener('scroll', function() {
+            const header = document.querySelector('header');
+            if (window.scrollY > 10) {
+                header.classList.add('py-2');
+                header.classList.remove('py-4');
+            } else {
+                header.classList.add('py-4');
+                header.classList.remove('py-2');
+            }
+        });
+        
+        // FPS 演示功能
+        (function() {
+            const fpsDemo = document.getElementById('fps-demo');
+            const boxCountSlider = document.getElementById('box-count');
+            const boxCountValue = document.getElementById('box-count-value');
+            const currentFpsEl = document.getElementById('current-fps');
+            const fpsStatusEl = document.getElementById('fps-status');
+            const fpsBar = document.getElementById('fps-bar');
+            
+            let animatedBoxes = [];
+            let frameCount = 0;
+            let lastFpsUpdate = performance.now();
+            let animationId;
+            
+            // 生成随机颜色
+            function getRandomColor() {
+                const letters = '0123456789ABCDEF';
+                let color = '#';
+                for (let i = 0; i < 6; i++) {
+                    color += letters[Math.floor(Math.random() * 16)];
+                }
+                return color;
+            }
+            
+            // 创建动画元素
+            function createAnimatedBoxes(count) {
+                // 清空现有元素
+                fpsDemo.innerHTML = '';
+                animatedBoxes = [];
+                const demoRect = fpsDemo.getBoundingClientRect();
+                const demoWidth = demoRect.width;
+                const demoHeight = demoRect.height;
+
+                for (let i = 0; i < count; i++) {
+                    const box = document.createElement('div');
+                    const size = Math.random() * 30 + 20; // 20-50px
+                    box.className = 'animated-box';
+                    box.style.width = `${size}px`;
+                    box.style.height = `${size}px`;
+                    box.style.backgroundColor = getRandomColor();
+                    // 初始位置和速度
+                    box.dataset.x = Math.random() * (demoWidth - size);
+                    box.dataset.y = Math.random() * (demoHeight - size);
+                    box.dataset.speedX = (Math.random() - 0.5) * 4; // 水平速度
+                    box.dataset.speedY = (Math.random() - 0.5) * 4; // 垂直速度
+                    fpsDemo.appendChild(box);
+                    animatedBoxes.push(box);
+                }
+            }
+            
+            // 更新动画（每帧执行）
+            function updateAnimation(timestamp) {
+                // 计算FPS
+                frameCount++;
+                const elapsed = timestamp - lastFpsUpdate;
+                if (elapsed >= 1000) { // 每秒更新一次FPS
+                    const fps = Math.round(frameCount / (elapsed / 1000));
+                    currentFpsEl.textContent = fps;
+                    
+                    // 更新FPS状态
+                    if (fps > 50) {
+                        fpsStatusEl.textContent = '流畅（60FPS）';
+                        fpsStatusEl.style.color = '#10B981';
+                        fpsBar.style.background = '#6366F1';
+                    } else if (fps > 30) {
+                        fpsStatusEl.textContent = '一般（30-50FPS）';
+                        fpsStatusEl.style.color = '#F59E0B';
+                        fpsBar.style.background = '#F59E0B';
+                    } else {
+                        fpsStatusEl.textContent = '卡顿（<30FPS）';
+                        fpsStatusEl.style.color = '#EF4444';
+                        fpsBar.style.background = '#EF4444';
+                    }
+                    
+                    // 更新进度条（60FPS对应100%）
+                    const percentage = Math.min(100, (fps / 60) * 100);
+                    fpsBar.style.width = `${percentage}%`;
+                    
+                    frameCount = 0;
+                    lastFpsUpdate = timestamp;
+                }
+
+                // 更新每个盒子的位置
+                const demoRect = fpsDemo.getBoundingClientRect();
+                const demoWidth = demoRect.width;
+                const demoHeight = demoRect.height;
+                
+                animatedBoxes.forEach(box => {
+                    let x = parseFloat(box.dataset.x);
+                    let y = parseFloat(box.dataset.y);
+                    let speedX = parseFloat(box.dataset.speedX);
+                    let speedY = parseFloat(box.dataset.speedY);
+                    const size = parseFloat(box.style.width);
+
+                    // 边界碰撞检测
+                    if (x <= 0 || x >= demoWidth - size) speedX *= -1;
+                    if (y <= 0 || y >= demoHeight - size) speedY *= -1;
+
+                    // 更新位置
+                    x += speedX;
+                    y += speedY;
+
+                    // 应用变换（使用transform性能更优）
+                    box.style.transform = `translate(${x}px, ${y}px)`;
+
+                    // 保存新状态
+                    box.dataset.x = x;
+                    box.dataset.y = y;
+                    box.dataset.speedX = speedX;
+                    box.dataset.speedY = speedY;
+                });
+
+                // 继续下一帧动画
+                animationId = requestAnimationFrame(updateAnimation);
+            }
+            
+            // 监听滑块变化，更新动画元素数量
+            boxCountSlider.addEventListener('input', () => {
+                const count = parseInt(boxCountSlider.value);
+                boxCountValue.textContent = count;
+                // 停止当前动画
+                cancelAnimationFrame(animationId);
+                // 创建新的动画元素
+                createAnimatedBoxes(count);
+                // 重启动画
+                lastFpsUpdate = performance.now();
+                frameCount = 0;
+                animationId = requestAnimationFrame(updateAnimation);
+            });
+            
+            // 窗口大小变化时重新调整动画
+            window.addEventListener('resize', () => {
+                cancelAnimationFrame(animationId);
+                const count = parseInt(boxCountSlider.value);
+                createAnimatedBoxes(count);
+                animationId = requestAnimationFrame(updateAnimation);
+            });
+            
+            // 初始化
+            createAnimatedBoxes(5);
+            animationId = requestAnimationFrame(updateAnimation);
+        })();
+    </script>
+</body>
+</html>

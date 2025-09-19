@@ -1,0 +1,256 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>最大内容绘制 (LCP) - Web性能指标演示</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- 配置Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        warning: '#F59E0B',
+                        danger: '#EF4444',
+                        purple: '#8B5CF6',
+                        indigo: '#6366F1',
+                        dark: '#1E293B',
+                        light: '#F8FAFC'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-hover {
+                @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800">
+    <!-- 顶部导航 -->
+    <header class="bg-white shadow-md fixed w-full top-0 z-50 transition-all duration-300">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <a href="index.html" class="flex items-center">
+                    <i class="fa fa-arrow-left text-gray-600 mr-2"></i>
+                    <i class="fa fa-tachometer text-primary text-2xl mr-3"></i>
+                    <h1 class="text-xl font-bold text-dark">Web性能指标演示</h1>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="container mx-auto px-4 pt-28 pb-16">
+        <!-- LCP 演示 -->
+        <section class="mb-16">
+            <div class="bg-white rounded-xl shadow-md overflow-hidden card-hover">
+                <div class="bg-secondary text-white p-6">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-2xl font-bold">最大内容绘制 (LCP)</h2>
+                        <span class="bg-white/20 px-3 py-1 rounded-full text-sm">核心加载性能</span>
+                    </div>
+                    <p class="mt-2 opacity-90">首屏最大内容（如大图片、标题）加载完成的时间，直接决定"首屏是否可用"的核心指标。</p>
+                </div>
+                
+                <div class="p-6">
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div>
+                            <h3 class="text-lg font-semibold mb-4 text-gray-800">演示</h3>
+                            <div id="lcp-demo" class="border border-gray-200 rounded-lg p-6 h-80 flex flex-col bg-gray-50">
+                                <div class="text-gray-700 mb-2">快速加载的小内容：</div>
+                                <p class="text-gray-600 mb-4">这段文本会先加载，代表页面中的次要内容...</p>
+                                
+                                <div class="text-gray-700 mb-2">缓慢加载的主要内容：</div>
+                                <div id="lcp-content" class="hidden flex-grow flex items-center justify-center my-4">
+                                    <img src="https://picsum.photos/600/300?random=1" alt="首屏最大图片内容" class="max-w-full max-h-full object-contain rounded shadow">
+                                </div>
+                                <div id="lcp-loading" class="flex-grow flex items-center justify-center my-4">
+                                    <div class="text-center">
+                                        <div class="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-secondary mb-4"></div>
+                                        <p class="text-xl">正在加载主要内容...</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex justify-center">
+                                <button id="lcp-reset" class="bg-secondary hover:bg-secondary/90 text-white px-4 py-2 rounded-lg transition-colors">
+                                    重新演示
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h3 class="text-lg font-semibold mb-4 text-gray-800">性能数据</h3>
+                            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                <div class="flex justify-between items-center mb-3">
+                                    <span class="text-gray-600">LCP 时间:</span>
+                                    <span id="lcp-time" class="font-mono font-semibold">-</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                                    <div id="lcp-bar" class="bg-secondary h-2.5 rounded-full" style="width: 0%"></div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2 text-center text-sm">
+                                    <div class="bg-green-100 text-green-800 p-2 rounded">
+                                        <span class="block font-semibold">良好</span>
+                                        <span>&lt; 2.5s</span>
+                                    </div>
+                                    <div class="bg-yellow-100 text-yellow-800 p-2 rounded">
+                                        <span class="block font-semibold">一般</span>
+                                        <span>2.5s - 4s</span>
+                                    </div>
+                                    <div class="bg-red-100 text-red-800 p-2 rounded">
+                                        <span class="block font-semibold">较差</span>
+                                        <span>&gt; 4s</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-6">
+                                <h4 class="font-semibold mb-2">优化建议:</h4>
+                                <ul class="list-disc list-inside text-gray-600 space-y-1">
+                                    <li>优化并压缩大图片资源</li>
+                                    <li>使用CDN分发内容</li>
+                                    <li>预加载关键资源</li>
+                                    <li>使用适当尺寸的图片</li>
+                                    <li>实施懒加载非首屏内容</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 相关指标 -->
+        <section>
+            <h3 class="text-xl font-bold mb-6">相关性能指标</h3>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <a href="fcp.html" class="block p-4 bg-white rounded-lg shadow-sm border border-gray-100 hover:border-secondary transition-colors">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-3">
+                            <i class="fa fa-file-text-o text-primary"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-medium">首次内容绘制 (FCP)</h4>
+                            <p class="text-sm text-gray-500">页面首次出现内容的时间</p>
+                        </div>
+                    </div>
+                </a>
+                
+                <a href="cls.html" class="block p-4 bg-white rounded-lg shadow-sm border border-gray-100 hover:border-secondary transition-colors">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center mr-3">
+                            <i class="fa fa-exchange text-warning"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-medium">累积布局偏移 (CLS)</h4>
+                            <p class="text-sm text-gray-500">页面元素意外偏移的总和</p>
+                        </div>
+                    </div>
+                </a>
+                
+                <a href="long-tasks.html" class="block p-4 bg-white rounded-lg shadow-sm border border-gray-100 hover:border-secondary transition-colors">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-danger/10 flex items-center justify-center mr-3">
+                            <i class="fa fa-cogs text-danger"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-medium">长任务执行时间</h4>
+                            <p class="text-sm text-gray-500">超过50ms的阻塞任务</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // 导航栏滚动效果
+        window.addEventListener('scroll', function() {
+            const header = document.querySelector('header');
+            if (window.scrollY > 10) {
+                header.classList.add('py-2');
+                header.classList.remove('py-4');
+            } else {
+                header.classList.add('py-4');
+                header.classList.remove('py-2');
+            }
+        });
+        
+        // LCP 演示功能
+        (function() {
+            const lcpContent = document.getElementById('lcp-content');
+            const lcpLoading = document.getElementById('lcp-loading');
+            const lcpTime = document.getElementById('lcp-time');
+            const lcpBar = document.getElementById('lcp-bar');
+            const lcpReset = document.getElementById('lcp-reset');
+            
+            let startTime;
+            
+            function startLCPDemo() {
+                startTime = performance.now();
+                lcpContent.classList.add('hidden');
+                lcpLoading.classList.remove('hidden');
+                lcpTime.textContent = '-';
+                lcpBar.style.width = '0%';
+                
+                // 随机延迟1.5-4.5秒模拟主要内容加载
+                const delay = Math.random() * 3000 + 1500;
+                
+                setTimeout(() => {
+                    const endTime = performance.now();
+                    const duration = Math.round(endTime - startTime);
+                    
+                    lcpContent.classList.remove('hidden');
+                    lcpLoading.classList.add('hidden');
+                    lcpTime.textContent = `${duration}ms`;
+                    
+                    // 设置进度条，4秒对应100%
+                    const percentage = Math.min(100, (duration / 4000) * 100);
+                    lcpBar.style.width = `${percentage}%`;
+                    
+                    // 根据时间设置颜色
+                    if (duration < 2500) {
+                        lcpBar.classList.remove('bg-warning', 'bg-danger');
+                        lcpBar.classList.add('bg-secondary');
+                    } else if (duration < 4000) {
+                        lcpBar.classList.remove('bg-secondary', 'bg-danger');
+                        lcpBar.classList.add('bg-warning');
+                    } else {
+                        lcpBar.classList.remove('bg-secondary', 'bg-warning');
+                        lcpBar.classList.add('bg-danger');
+                    }
+                }, delay);
+            }
+            
+            lcpReset.addEventListener('click', function() {
+                // 刷新图片URL避免缓存
+                const img = lcpContent.querySelector('img');
+                img.src = `https://picsum.photos/600/300?random=${Math.random()}`;
+                startLCPDemo();
+            });
+            
+            // 初始运行
+            startLCPDemo();
+        })();
+    </script>
+</body>
+</html>

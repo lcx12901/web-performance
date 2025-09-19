@@ -1,0 +1,315 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>累积布局偏移 (CLS) - Web性能指标演示</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- 配置Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        warning: '#F59E0B',
+                        danger: '#EF4444',
+                        purple: '#8B5CF6',
+                        indigo: '#6366F1',
+                        dark: '#1E293B',
+                        light: '#F8FAFC'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-hover {
+                @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+            }
+            .offset-animation {
+                transition: transform 0.5s ease-out;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800">
+    <!-- 顶部导航 -->
+    <header class="bg-white shadow-md fixed w-full top-0 z-50 transition-all duration-300">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <a href="index.html" class="flex items-center">
+                    <i class="fa fa-arrow-left text-gray-600 mr-2"></i>
+                    <i class="fa fa-tachometer text-primary text-2xl mr-3"></i>
+                    <h1 class="text-xl font-bold text-dark">Web性能指标演示</h1>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="container mx-auto px-4 pt-28 pb-16">
+        <!-- CLS 演示 -->
+        <section class="mb-16">
+            <div class="bg-white rounded-xl shadow-md overflow-hidden card-hover">
+                <div class="bg-warning text-white p-6">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-2xl font-bold">累积布局偏移 (CLS)</h2>
+                        <span class="bg-white/20 px-3 py-1 rounded-full text-sm">视觉稳定性</span>
+                    </div>
+                    <p class="mt-2 opacity-90">页面加载过程中元素意外偏移的总和（如图片/广告加载后撑开容器），避免用户"点错按钮"。</p>
+                </div>
+                
+                <div class="p-6">
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div>
+                            <h3 class="text-lg font-semibold mb-4 text-gray-800">演示</h3>
+                            <div id="cls-demo" class="border border-gray-200 rounded-lg p-6 bg-gray-50">
+                                <p class="mb-4">以下内容将展示布局偏移效果。尝试在广告加载前点击下方按钮：</p>
+                                
+                                <!-- 动态广告容器（未预设高度，加载后会撑开布局） -->
+                                <div class="ad-container mb-6 bg-gray-100 rounded-lg overflow-hidden">
+                                    <div id="ad-placeholder" class="p-4 text-center text-gray-500">
+                                        广告位（即将加载）
+                                    </div>
+                                    <div id="ad-content" class="hidden bg-yellow-50 p-4">
+                                        <div class="flex items-center">
+                                            <div class="bg-warning/20 p-2 rounded mr-3">
+                                                <i class="fa fa-bullhorn text-warning text-xl"></i>
+                                            </div>
+                                            <div>
+                                                <p class="font-medium text-warning">推广内容</p>
+                                                <p class="text-sm text-gray-600">这是一条动态加载的广告，未预设高度导致布局偏移</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 广告下方的交互元素（会被偏移影响） -->
+                                <button id="target-btn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition-colors offset-animation">
+                                    重要按钮（可能被偏移的广告遮挡）
+                                </button>
+                                
+                                <div id="offset-toast" class="mt-4 bg-red-50 text-red-600 p-3 rounded-lg hidden">
+                                    <i class="fa fa-exclamation-triangle mr-2"></i>
+                                    <span>⚠️ 布局发生偏移！</span>
+                                </div>
+                                
+                                <div class="mt-6">
+                                    <button id="load-ad-btn" class="bg-warning hover:bg-warning/90 text-white px-4 py-2 rounded-lg transition-colors">
+                                        加载广告（触发布局偏移）
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex justify-center">
+                                <button id="cls-reset" class="bg-warning hover:bg-warning/90 text-white px-4 py-2 rounded-lg transition-colors">
+                                    重新演示
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h3 class="text-lg font-semibold mb-4 text-gray-800">性能数据</h3>
+                            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                <div class="flex justify-between items-center mb-3">
+                                    <span class="text-gray-600">CLS 分数:</span>
+                                    <span id="cls-score" class="font-mono font-semibold">0</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                                    <div id="cls-bar" class="bg-warning h-2.5 rounded-full" style="width: 0%"></div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2 text-center text-sm">
+                                    <div class="bg-green-100 text-green-800 p-2 rounded">
+                                        <span class="block font-semibold">良好</span>
+                                        <span>&lt; 0.1</span>
+                                    </div>
+                                    <div class="bg-yellow-100 text-yellow-800 p-2 rounded">
+                                        <span class="block font-semibold">一般</span>
+                                        <span>0.1 - 0.25</span>
+                                    </div>
+                                    <div class="bg-red-100 text-red-800 p-2 rounded">
+                                        <span class="block font-semibold">较差</span>
+                                        <span>&gt; 0.25</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-6">
+                                <h4 class="font-semibold mb-2">优化建议:</h4>
+                                <ul class="list-disc list-inside text-gray-600 space-y-1">
+                                    <li>为图片和视频设置明确尺寸</li>
+                                    <li>避免插入内容到现有内容上方</li>
+                                    <li>使用CSS transform代替top/left定位</li>
+                                    <li>为动态内容预留空间</li>
+                                    <li>使用骨架屏或占位符</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 相关指标 -->
+        <section>
+            <h3 class="text-xl font-bold mb-6">相关性能指标</h3>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <a href="lcp.html" class="block p-4 bg-white rounded-lg shadow-sm border border-gray-100 hover:border-warning transition-colors">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center mr-3">
+                            <i class="fa fa-picture-o text-secondary"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-medium">最大内容绘制 (LCP)</h4>
+                            <p class="text-sm text-gray-500">首屏最大内容加载完成时间</p>
+                        </div>
+                    </div>
+                </a>
+                
+                <a href="fcp.html" class="block p-4 bg-white rounded-lg shadow-sm border border-gray-100 hover:border-warning transition-colors">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-3">
+                            <i class="fa fa-file-text-o text-primary"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-medium">首次内容绘制 (FCP)</h4>
+                            <p class="text-sm text-gray-500">页面首次出现内容的时间</p>
+                        </div>
+                    </div>
+                </a>
+                
+                <a href="fps.html" class="block p-4 bg-white rounded-lg shadow-sm border border-gray-100 hover:border-warning transition-colors">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-indigo/10 flex items-center justify-center mr-3">
+                            <i class="fa fa-film text-indigo"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-medium">绘制帧率 (FPS)</h4>
+                            <p class="text-sm text-gray-500">浏览器每秒渲染页面的次数</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </section>
+    </main>
+    
+    <script>
+        // 导航栏滚动效果
+        window.addEventListener('scroll', function() {
+            const header = document.querySelector('header');
+            if (window.scrollY > 10) {
+                header.classList.add('py-2');
+                header.classList.remove('py-4');
+            } else {
+                header.classList.add('py-4');
+                header.classList.remove('py-2');
+            }
+        });
+        
+        // CLS 演示功能
+        (function() {
+            const adPlaceholder = document.getElementById('ad-placeholder');
+            const adContent = document.getElementById('ad-content');
+            const targetBtn = document.getElementById('target-btn');
+            const offsetToast = document.getElementById('offset-toast');
+            const loadAdBtn = document.getElementById('load-ad-btn');
+            const clsScore = document.getElementById('cls-score');
+            const clsBar = document.getElementById('cls-bar');
+            const clsReset = document.getElementById('cls-reset');
+            
+            let adLoaded = false;
+            
+            // 模拟CLS计算（简化版）
+            function calculateCLS() {
+                // 模拟CLS分数（0.05-0.3，覆盖不同等级）
+                const clsValue = (Math.random() * 0.25 + 0.05).toFixed(2);
+                return parseFloat(clsValue);
+            }
+            
+            function loadAd() {
+                if (adLoaded) return;
+                adLoaded = true;
+                
+                loadAdBtn.disabled = true;
+                loadAdBtn.textContent = '加载中...';
+                
+                // 模拟广告加载延迟
+                setTimeout(() => {
+                    // 显示广告内容，隐藏占位符（触发布局偏移）
+                    adPlaceholder.style.display = 'none';
+                    adContent.style.display = 'block';
+                    
+                    // 计算并更新CLS分数
+                    const clsValue = calculateCLS();
+                    clsScore.textContent = clsValue;
+                    
+                    // 更新进度条（0.25对应100%）
+                    const percentage = Math.min(100, (clsValue / 0.25) * 100);
+                    clsBar.style.width = `${percentage}%`;
+                    
+                    // 根据CLS分数设置颜色
+                    if (clsValue < 0.1) {
+                        clsBar.classList.remove('bg-warning', 'bg-danger');
+                        clsBar.classList.add('bg-secondary');
+                    } else if (clsValue < 0.25) {
+                        clsBar.classList.remove('bg-secondary', 'bg-danger');
+                        clsBar.classList.add('bg-warning');
+                    } else {
+                        clsBar.classList.remove('bg-secondary', 'bg-warning');
+                        clsBar.classList.add('bg-danger');
+                    }
+                    
+                    // 显示布局偏移提示
+                    offsetToast.classList.remove('hidden');
+                    
+                    // 提示用户按钮位置变化
+                    targetBtn.textContent = `重要按钮（已偏移 ${(clsValue*100).toFixed(0)}%）`;
+                    targetBtn.style.transform = `translateY(${10 + clsValue * 50}px)`;
+                    
+                    loadAdBtn.textContent = '广告已加载';
+                }, 800);
+            }
+            
+            function resetDemo() {
+                adLoaded = false;
+                adPlaceholder.style.display = 'block';
+                adContent.style.display = 'none';
+                offsetToast.classList.add('hidden');
+                loadAdBtn.disabled = false;
+                loadAdBtn.textContent = '加载广告（触发布局偏移）';
+                targetBtn.textContent = '重要按钮（可能被偏移的广告遮挡）';
+                targetBtn.style.transform = 'translateY(0)';
+                clsScore.textContent = '0';
+                clsBar.style.width = '0%';
+                clsBar.className = 'bg-warning h-2.5 rounded-full';
+            }
+            
+            // 按钮点击事件
+            loadAdBtn.addEventListener('click', loadAd);
+            clsReset.addEventListener('click', resetDemo);
+            
+            // 目标按钮点击反馈
+            targetBtn.addEventListener('click', () => {
+                alert('你点击了按钮！如果发生布局偏移，你可能原本想点击的是其他位置～');
+            });
+            
+            // 初始状态
+            resetDemo();
+        })();
+    </script>
+</body>
+</html>

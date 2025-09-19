@@ -1,0 +1,281 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>首次输入延迟 (FID) - Web性能指标演示</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- 配置Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        warning: '#F59E0B',
+                        danger: '#EF4444',
+                        purple: '#8B5CF6',
+                        indigo: '#6366F1',
+                        dark: '#1E293B',
+                        light: '#F8FAFC'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-hover {
+                @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800">
+    <!-- 顶部导航 -->
+    <header class="bg-white shadow-md fixed w-full top-0 z-50 transition-all duration-300">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <a href="index.html" class="flex items-center">
+                    <i class="fa fa-arrow-left text-gray-600 mr-2"></i>
+                    <i class="fa fa-tachometer text-primary text-2xl mr-3"></i>
+                    <h1 class="text-xl font-bold text-dark">Web性能指标演示</h1>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="container mx-auto px-4 pt-28 pb-16">
+        <!-- FID 演示 -->
+        <section class="mb-16">
+            <div class="bg-white rounded-xl shadow-md overflow-hidden card-hover">
+                <div class="bg-purple text-white p-6">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-2xl font-bold">首次输入延迟 (FID)</h2>
+                        <span class="bg-white/20 px-3 py-1 rounded-full text-sm">交互性能</span>
+                    </div>
+                    <p class="mt-2 opacity-90">用户首次点击按钮、输入文本到浏览器开始响应的时间，反映"交互是否卡顿"的初始体验。</p>
+                </div>
+                
+                <div class="p-6">
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div>
+                            <h3 class="text-lg font-semibold mb-4 text-gray-800">演示</h3>
+                            <div id="fid-demo" class="border border-gray-200 rounded-lg p-6 h-64 flex flex-col items-center justify-center bg-gray-50">
+                                <p class="text-center mb-6">请点击下方按钮进行首次交互</p>
+                                
+                                <button id="fid-interact-btn" class="bg-purple hover:bg-purple/90 text-white px-6 py-3 rounded-lg transition-colors text-lg font-medium">
+                                    <i class="fa fa-mouse-pointer mr-2"></i>点击我
+                                </button>
+                                
+                                <div id="fid-feedback" class="mt-6 text-center hidden">
+                                    <div id="fid-loading" class="hidden">
+                                        <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple mb-2"></div>
+                                        <p>处理中...</p>
+                                    </div>
+                                    <div id="fid-result" class="hidden"></div>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex justify-center">
+                                <button id="fid-reset" class="bg-purple hover:bg-purple/90 text-white px-4 py-2 rounded-lg transition-colors">
+                                    重新演示
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h3 class="text-lg font-semibold mb-4 text-gray-800">性能数据</h3>
+                            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                <div class="flex justify-between items-center mb-3">
+                                    <span class="text-gray-600">FID 时间:</span>
+                                    <span id="fid-time" class="font-mono font-semibold">-</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                                    <div id="fid-bar" class="bg-purple h-2.5 rounded-full" style="width: 0%"></div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2 text-center text-sm">
+                                    <div class="bg-green-100 text-green-800 p-2 rounded">
+                                        <span class="block font-semibold">良好</span>
+                                        <span>&lt; 100ms</span>
+                                    </div>
+                                    <div class="bg-yellow-100 text-yellow-800 p-2 rounded">
+                                        <span class="block font-semibold">一般</span>
+                                        <span>100ms - 300ms</span>
+                                    </div>
+                                    <div class="bg-red-100 text-red-800 p-2 rounded">
+                                        <span class="block font-semibold">较差</span>
+                                        <span>&gt; 300ms</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-6">
+                                <h4 class="font-semibold mb-2">优化建议:</h4>
+                                <ul class="list-disc list-inside text-gray-600 space-y-1">
+                                    <li>减少主线程阻塞时间</li>
+                                    <li>拆分长任务为多个短任务</li>
+                                    <li>使用Web Workers处理复杂计算</li>
+                                    <li>优化事件处理器</li>
+                                    <li>减少DOM操作复杂度</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 相关指标 -->
+        <section>
+            <h3 class="text-xl font-bold mb-6">相关性能指标</h3>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <a href="fps.html" class="block p-4 bg-white rounded-lg shadow-sm border border-gray-100 hover:border-purple transition-colors">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-indigo/10 flex items-center justify-center mr-3">
+                            <i class="fa fa-film text-indigo"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-medium">绘制帧率 (FPS)</h4>
+                            <p class="text-sm text-gray-500">浏览器每秒渲染页面的次数</p>
+                        </div>
+                    </div>
+                </a>
+                
+                <a href="long-tasks.html" class="block p-4 bg-white rounded-lg shadow-sm border border-gray-100 hover:border-purple transition-colors">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-danger/10 flex items-center justify-center mr-3">
+                            <i class="fa fa-cogs text-danger"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-medium">长任务执行时间</h4>
+                            <p class="text-sm text-gray-500">超过50ms的阻塞任务</p>
+                        </div>
+                    </div>
+                </a>
+                
+                <a href="memory.html" class="block p-4 bg-white rounded-lg shadow-sm border border-gray-100 hover:border-purple transition-colors">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-dark/10 flex items-center justify-center mr-3">
+                            <i class="fa fa-microchip text-dark"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-medium">内存占用率</h4>
+                            <p class="text-sm text-gray-500">页面运行中占用的内存大小</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </section>
+    </main>
+    
+    <script>
+        // 导航栏滚动效果
+        window.addEventListener('scroll', function() {
+            const header = document.querySelector('header');
+            if (window.scrollY > 10) {
+                header.classList.add('py-2');
+                header.classList.remove('py-4');
+            } else {
+                header.classList.add('py-4');
+                header.classList.remove('py-2');
+            }
+        });
+        
+        // FID 演示功能
+        (function() {
+            const interactBtn = document.getElementById('fid-interact-btn');
+            const feedbackEl = document.getElementById('fid-feedback');
+            const loadingEl = document.getElementById('fid-loading');
+            const resultEl = document.getElementById('fid-result');
+            const fidTime = document.getElementById('fid-time');
+            const fidBar = document.getElementById('fid-bar');
+            const fidReset = document.getElementById('fid-reset');
+            
+            let interactionStarted = false;
+            
+            // 模拟主线程阻塞任务
+            function simulateHeavyTask(durationMs) {
+                const start = performance.now();
+                // 同步循环模拟耗时计算（阻塞主线程）
+                while (performance.now() - start < durationMs) {
+                    // 空循环，模拟复杂JS计算或DOM操作
+                }
+            }
+            
+            function handleInteraction() {
+                if (interactionStarted) return;
+                interactionStarted = true;
+                
+                const inputStartTime = performance.now(); // 记录用户输入时间
+                interactBtn.disabled = true;
+                interactBtn.textContent = '处理中...';
+                feedbackEl.classList.remove('hidden');
+                loadingEl.classList.remove('hidden');
+                resultEl.classList.add('hidden');
+                
+                // 模拟主线程阻塞（50-350ms，覆盖不同FID等级）
+                const blockDuration = Math.random() * 300 + 50;
+                simulateHeavyTask(blockDuration);
+                
+                // 阻塞结束后，计算FID
+                const inputEndTime = performance.now();
+                const fid = Math.round(inputEndTime - inputStartTime);
+                
+                // 更新UI反馈
+                loadingEl.classList.add('hidden');
+                resultEl.classList.remove('hidden');
+                resultEl.innerHTML = `<p class="font-medium">交互已完成！</p><p>首次输入延迟: <span class="font-mono">${fid}ms</span></p>`;
+                fidTime.textContent = `${fid}ms`;
+                
+                // 更新进度条
+                const percentage = Math.min(100, (fid / 300) * 100); // 300ms对应100%
+                fidBar.style.width = `${percentage}%`;
+                
+                // 根据FID设置颜色
+                if (fid < 100) {
+                    fidBar.classList.remove('bg-warning', 'bg-danger');
+                    fidBar.classList.add('bg-purple');
+                } else if (fid < 300) {
+                    fidBar.classList.remove('bg-purple', 'bg-danger');
+                    fidBar.classList.add('bg-warning');
+                } else {
+                    fidBar.classList.remove('bg-purple', 'bg-warning');
+                    fidBar.classList.add('bg-danger');
+                }
+            }
+            
+            function resetDemo() {
+                interactionStarted = false;
+                interactBtn.disabled = false;
+                interactBtn.innerHTML = '<i class="fa fa-mouse-pointer mr-2"></i>点击我';
+                feedbackEl.classList.add('hidden');
+                loadingEl.classList.add('hidden');
+                resultEl.classList.add('hidden');
+                fidTime.textContent = '-';
+                fidBar.style.width = '0%';
+                fidBar.className = 'bg-purple h-2.5 rounded-full';
+            }
+            
+            interactBtn.addEventListener('click', handleInteraction);
+            fidReset.addEventListener('click', resetDemo);
+            
+            // 初始状态
+            resetDemo();
+        })();
+    </script>
+</body>
+</html>

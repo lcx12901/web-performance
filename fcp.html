@@ -1,0 +1,245 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>首次内容绘制 (FCP) - Web性能指标演示</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- 配置Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        warning: '#F59E0B',
+                        danger: '#EF4444',
+                        purple: '#8B5CF6',
+                        indigo: '#6366F1',
+                        dark: '#1E293B',
+                        light: '#F8FAFC'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-hover {
+                @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800">
+    <!-- 顶部导航 -->
+    <header class="bg-white shadow-md fixed w-full top-0 z-50 transition-all duration-300">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <a href="index.html" class="flex items-center">
+                    <i class="fa fa-arrow-left text-gray-600 mr-2"></i>
+                    <i class="fa fa-tachometer text-primary text-2xl mr-3"></i>
+                    <h1 class="text-xl font-bold text-dark">Web性能指标演示</h1>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="container mx-auto px-4 pt-28 pb-16">
+        <!-- FCP 演示 -->
+        <section class="mb-16">
+            <div class="bg-white rounded-xl shadow-md overflow-hidden card-hover">
+                <div class="bg-primary text-white p-6">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-2xl font-bold">首次内容绘制 (FCP)</h2>
+                        <span class="bg-white/20 px-3 py-1 rounded-full text-sm">加载性能</span>
+                    </div>
+                    <p class="mt-2 opacity-90">从页面开始加载到首次出现文本、图片等内容的时间，用户第一个"页面在加载"的感知点。</p>
+                </div>
+                
+                <div class="p-6">
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div>
+                            <h3 class="text-lg font-semibold mb-4 text-gray-800">演示</h3>
+                            <div id="fcp-demo" class="border border-gray-200 rounded-lg p-6 h-64 flex items-center justify-center bg-gray-50">
+                                <div id="fcp-content" class="hidden text-center">
+                                    <i class="fa fa-file-text-o text-5xl text-primary mb-4"></i>
+                                    <p class="text-xl">内容已加载</p>
+                                </div>
+                                <div id="fcp-loading" class="text-center">
+                                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
+                                    <p class="text-xl">加载中...</p>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex justify-center">
+                                <button id="fcp-reset" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition-colors">
+                                    重新演示
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h3 class="text-lg font-semibold mb-4 text-gray-800">性能数据</h3>
+                            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                <div class="flex justify-between items-center mb-3">
+                                    <span class="text-gray-600">FCP 时间:</span>
+                                    <span id="fcp-time" class="font-mono font-semibold">-</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                                    <div id="fcp-bar" class="bg-primary h-2.5 rounded-full" style="width: 0%"></div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2 text-center text-sm">
+                                    <div class="bg-green-100 text-green-800 p-2 rounded">
+                                        <span class="block font-semibold">良好</span>
+                                        <span>&lt; 1.8s</span>
+                                    </div>
+                                    <div class="bg-yellow-100 text-yellow-800 p-2 rounded">
+                                        <span class="block font-semibold">一般</span>
+                                        <span>1.8s - 3s</span>
+                                    </div>
+                                    <div class="bg-red-100 text-red-800 p-2 rounded">
+                                        <span class="block font-semibold">较差</span>
+                                        <span>&gt; 3s</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-6">
+                                <h4 class="font-semibold mb-2">优化建议:</h4>
+                                <ul class="list-disc list-inside text-gray-600 space-y-1">
+                                    <li>减少关键资源的加载时间</li>
+                                    <li>优化服务器响应时间 (TTFB)</li>
+                                    <li>内联关键CSS</li>
+                                    <li>延迟加载非关键资源</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 相关指标 -->
+        <section>
+            <h3 class="text-xl font-bold mb-6">相关性能指标</h3>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <a href="lcp.html" class="block p-4 bg-white rounded-lg shadow-sm border border-gray-100 hover:border-primary transition-colors">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center mr-3">
+                            <i class="fa fa-picture-o text-secondary"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-medium">最大内容绘制 (LCP)</h4>
+                            <p class="text-sm text-gray-500">首屏最大内容加载完成时间</p>
+                        </div>
+                    </div>
+                </a>
+                
+                <a href="fid.html" class="block p-4 bg-white rounded-lg shadow-sm border border-gray-100 hover:border-primary transition-colors">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-purple/10 flex items-center justify-center mr-3">
+                            <i class="fa fa-mouse-pointer text-purple"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-medium">首次输入延迟 (FID)</h4>
+                            <p class="text-sm text-gray-500">用户首次交互到响应的时间</p>
+                        </div>
+                    </div>
+                </a>
+                
+                <a href="cls.html" class="block p-4 bg-white rounded-lg shadow-sm border border-gray-100 hover:border-primary transition-colors">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center mr-3">
+                            <i class="fa fa-exchange text-warning"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-medium">累积布局偏移 (CLS)</h4>
+                            <p class="text-sm text-gray-500">页面元素意外偏移的总和</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </section>
+    </main>
+    
+    <script>
+        // 导航栏滚动效果
+        window.addEventListener('scroll', function() {
+            const header = document.querySelector('header');
+            if (window.scrollY > 10) {
+                header.classList.add('py-2');
+                header.classList.remove('py-4');
+            } else {
+                header.classList.add('py-4');
+                header.classList.remove('py-2');
+            }
+        });
+        
+        // FCP 演示功能
+        (function() {
+            const fcpContent = document.getElementById('fcp-content');
+            const fcpLoading = document.getElementById('fcp-loading');
+            const fcpTime = document.getElementById('fcp-time');
+            const fcpBar = document.getElementById('fcp-bar');
+            const fcpReset = document.getElementById('fcp-reset');
+            
+            let startTime;
+            
+            function startFCPDemo() {
+                startTime = performance.now();
+                fcpContent.classList.add('hidden');
+                fcpLoading.classList.remove('hidden');
+                fcpTime.textContent = '-';
+                fcpBar.style.width = '0%';
+                
+                // 随机延迟1-3秒模拟加载
+                const delay = Math.random() * 2000 + 1000;
+                
+                setTimeout(() => {
+                    const endTime = performance.now();
+                    const duration = Math.round(endTime - startTime);
+                    
+                    fcpContent.classList.remove('hidden');
+                    fcpLoading.classList.add('hidden');
+                    fcpTime.textContent = `${duration}ms`;
+                    
+                    // 设置进度条，3秒对应100%
+                    const percentage = Math.min(100, (duration / 3000) * 100);
+                    fcpBar.style.width = `${percentage}%`;
+                    
+                    // 根据时间设置颜色
+                    if (duration < 1800) {
+                        fcpBar.classList.remove('bg-warning', 'bg-danger');
+                        fcpBar.classList.add('bg-primary');
+                    } else if (duration < 3000) {
+                        fcpBar.classList.remove('bg-primary', 'bg-danger');
+                        fcpBar.classList.add('bg-warning');
+                    } else {
+                        fcpBar.classList.remove('bg-primary', 'bg-warning');
+                        fcpBar.classList.add('bg-danger');
+                    }
+                }, delay);
+            }
+            
+            fcpReset.addEventListener('click', startFCPDemo);
+            
+            // 初始运行
+            startFCPDemo();
+        })();
+    </script>
+</body>
+</html>
